@@ -1,8 +1,8 @@
+import com.sun.tools.corba.se.idl.StringGen
+
 import scala.util.Random
 
 object Bowling {
-
-  val nrOfFrames = 2
 
   trait RollResult {
     def value(): Int
@@ -51,7 +51,7 @@ object Bowling {
       result
     }
 
-    def getDisplayName = {
+    def getDisplayName() = {
       name match {
         case n if n.length < maxNameSize =>
           val emptySpaces = " " * (maxNameSize - n.length)
@@ -96,16 +96,23 @@ object Bowling {
     }
   }
 
-  def main(args: Array[String]): Unit = {
-    val players = List(new Player("Sylwia"), new Player("Arek"))
+  class BowlingResultPerPlayer(player: Player, points: List[Points]) {
 
-    val result = play(nrOfFrames, players)
-
-    println(result)
+    def display(): String =  {
+      player.getDisplayName() + ": " + points.map(_.desc()).mkString(" || ")
+    }
 
   }
 
-  private def play(nrOfFrames: Int, players: List[Player]): String = {
+  class BowlingResult(playerResults: List[BowlingResultPerPlayer]) {
+
+    def display(): String = {
+      playerResults.map(_.display()).mkString("\n")
+    }
+
+  }
+
+  def play(nrOfFrames: Int, players: List[Player]): BowlingResult = {
     println("Bowling game is starting")
     val frameNrs = List.range(1, nrOfFrames + 1)
 
@@ -114,7 +121,7 @@ object Bowling {
       playFrame(nrOfFrame, players)
     })
 
-    getResultTable(players, frames)
+    getResult(players, frames)
 
   }
 
@@ -131,16 +138,15 @@ object Bowling {
     new Frame(nrOfFrame, playerResults)
   }
 
-  private def getResultTable(players: List[Player], frames: List[Frame]): String = {
-    println("-----RESULTS------")
+  private def getResult(players: List[Player], frames: List[Frame]): BowlingResult = {
+    val resultsPerPlayer = players.map(player => {
+          val points = frames.map(frame => {
+            frame.getPoints(player, nextFrame(frame, frames))
+          })
+          new BowlingResultPerPlayer(player, points)
+    })
 
-    players.map(player => {
-        player.getDisplayName() + ": " +
-          frames.map(frame => {
-            frame.getPoints(player, nextFrame(frame, frames)).desc()
-          }).mkString(" || ")
-    }).mkString("\n")
-
+    new BowlingResult(resultsPerPlayer)
   }
 
   private def nextFrame(frame: Frame, allFrames: List[Frame]): Option[Frame] = {
