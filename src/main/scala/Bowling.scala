@@ -99,7 +99,9 @@ object Bowling {
   class BowlingResultPerPlayer(player: Player, points: List[Points]) {
 
     def display(): String =  {
-      player.getDisplayName() + ": " + points.map(_.desc()).mkString(" || ")
+      val pointsForFramesDesc = points.map(_.desc())
+      val allPoints = points.map(_.value).sum
+      s"${player.getDisplayName()}: ${pointsForFramesDesc.mkString(" || ")} = $allPoints"
     }
 
   }
