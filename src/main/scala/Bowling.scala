@@ -1,5 +1,3 @@
-import com.sun.tools.corba.se.idl.StringGen
-
 import scala.util.Random
 
 object Bowling {
@@ -24,25 +22,24 @@ object Bowling {
   }
 
   case object Strike extends RollResult {
-    override def value(): Int = 10
+    override def value(): Int = maxPinValue
     override def desc(): String = "X"
   }
 
   class Player(val name: String) {
 
-    val maxNameSize = 20
+    val maxNameSize = 10
 
-    def roll(previousRolls: List[RollResult]): RollResult = {
+    def roll(nrOfFrame: Int, previousRoll: Option[RollResult], rollFunction: (Int, Int) => Int): RollResult = {
       println(s"   Player $name rolling...")
-      Thread.sleep(2000)
 
-      val previousValues = previousRolls.map(_.value()).sum
-      val rollResult = Random.between(0, maxPinValue + 1  - previousValues)
+      val previousValue = previousRoll.map(_.value()).getOrElse(0)
+      val rollResult = rollFunction(nrOfFrame, previousValue)
 
-      val result = if (rollResult == maxPinValue && previousRolls.isEmpty) {
+      val result = if (rollResult == maxPinValue && previousRoll.isEmpty) {
         Strike
       } else {
-        val values = previousValues + rollResult
+        val values = previousValue + rollResult
         if (values == maxPinValue) {
           Spare(rollResult)
         } else {
@@ -74,7 +71,7 @@ object Bowling {
       val allPoints: Int = playerRolls match {
         case rolls if rolls.contains(Strike) => nextFrame.map(_.getPoints(player, None).value)
             .getOrElse(0) + allPointsFromFrame
-        case rolls if rolls.contains(Spare) => nextFrame.map(_.getFirstRollResultValue(player))
+        case rolls if rolls.find(result => result.isInstanceOf[Spare]).isDefined => nextFrame.map(_.getFirstRollResultValue(player))
             .getOrElse(0) + allPointsFromFrame
         case _ => allPointsFromFrame
       }
@@ -116,25 +113,29 @@ object Bowling {
 
   }
 
-  def play(nrOfFrames: Int, players: List[Player]): BowlingResult = {
+  def play(nrOfFrames: Int, players: List[Player], rollFunction: (Int, Int) => Int = randomRoll): BowlingResult = {
     val frameNrs = List.range(1, nrOfFrames + 1)
 
     val frames = frameNrs.map(nrOfFrame => {
       println(s"Lets start frame $nrOfFrame")
-      playFrame(nrOfFrame, players)
+      playFrame(nrOfFrame, players, rollFunction)
     })
 
     getResult(players, frames)
 
   }
 
-  private def playFrame(nrOfFrame: Int, players: List[Player]): Frame = {
+  private def randomRoll(frameNr: Int, previousValue: Int) = {
+    Random.between(0, maxPinValue + 1  - previousValue)
+  }
+
+  private def playFrame(nrOfFrame: Int, players: List[Player], rollFunction: (Int, Int) => Int): Frame = {
     val playerResults = players.map( player => {
-      val resultFirstRoll = player.roll(List())
+      val resultFirstRoll = player.roll(nrOfFrame, Option.empty, rollFunction)
       resultFirstRoll match {
         case Strike =>  (player, List(resultFirstRoll))
         case _ =>
-          val resultSecondRoll = player.roll(List(resultFirstRoll))
+          val resultSecondRoll = player.roll(nrOfFrame, Option(resultFirstRoll), rollFunction)
           (player, List(resultFirstRoll, resultSecondRoll))
       }
     }).toMap
