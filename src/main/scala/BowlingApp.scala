@@ -8,6 +8,7 @@ object BowlingApp {
 
     val players = List(new Player("Sylwia"), new Player("Arek"))
 
+    println("Bowling game is starting")
     val result = Bowling.play(nrOfFrames, players)
 
     println("-----RESULTS------")

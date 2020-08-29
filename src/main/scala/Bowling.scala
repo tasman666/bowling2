@@ -4,6 +4,8 @@ import scala.util.Random
 
 object Bowling {
 
+  val maxPinValue = 10
+
   trait RollResult {
     def value(): Int
     def desc(): String
@@ -35,13 +37,13 @@ object Bowling {
       Thread.sleep(2000)
 
       val previousValues = previousRolls.map(_.value()).sum
-      val rollResult = Random.between(0, 11  - previousValues)
+      val rollResult = Random.between(0, maxPinValue + 1  - previousValues)
 
-      val result = if (rollResult == 10 && previousRolls.isEmpty) {
+      val result = if (rollResult == maxPinValue && previousRolls.isEmpty) {
         Strike
       } else {
         val values = previousValues + rollResult
-        if (values == 10) {
+        if (values == maxPinValue) {
           Spare(rollResult)
         } else {
           Normal(rollResult)
@@ -51,7 +53,7 @@ object Bowling {
       result
     }
 
-    def getDisplayName() = {
+    def getDisplayName(): String = {
       name match {
         case n if n.length < maxNameSize =>
           val emptySpaces = " " * (maxNameSize - n.length)
@@ -115,7 +117,6 @@ object Bowling {
   }
 
   def play(nrOfFrames: Int, players: List[Player]): BowlingResult = {
-    println("Bowling game is starting")
     val frameNrs = List.range(1, nrOfFrames + 1)
 
     val frames = frameNrs.map(nrOfFrame => {
