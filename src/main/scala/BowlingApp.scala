@@ -2,7 +2,7 @@ import Bowling.Player
 
 object BowlingApp {
 
-  val nrOfFrames = 2
+  val nrOfFrames = 10
 
   def main(args: Array[String]): Unit = {
 
