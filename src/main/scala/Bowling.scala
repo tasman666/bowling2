@@ -112,7 +112,7 @@ object Bowling {
 
     val frames = frameNrs.map(nrOfFrame => {
       println(s"Lets start frame $nrOfFrame")
-      playFrame(nrOfFrame, players, rollFunction)
+      playFrame(nrOfFrames, nrOfFrame, players, rollFunction)
     })
 
     getResult(players, frames)
@@ -123,14 +123,29 @@ object Bowling {
     Random.between(0, maxPinValue + 1  - previousValue)
   }
 
-  private def playFrame(nrOfFrame: Int, players: List[Player], rollFunction: (Int, Int) => Int): Frame = {
+  private def playFrame(nrOfFrames: Int, nrOfFrame: Int, players: List[Player], rollFunction: (Int, Int) => Int): Frame = {
     val playerResults = players.map( player => {
       val resultFirstRoll = player.roll(nrOfFrame, Option.empty, rollFunction)
       resultFirstRoll match {
-        case Strike =>  (player, List(resultFirstRoll))
+        case Strike =>
+          if (nrOfFrame == nrOfFrames) {
+            val resultSecondRoll = player.roll(nrOfFrame, Option.empty, rollFunction)
+            val resultThirdRoll = player.roll(nrOfFrame, resultSecondRoll match {
+              case Strike => Option.empty
+              case _ => Option(resultSecondRoll)
+            }, rollFunction)
+            (player, List(resultFirstRoll, resultSecondRoll, resultThirdRoll))
+          } else {
+            (player, List(resultFirstRoll))
+          }
         case _ =>
           val resultSecondRoll = player.roll(nrOfFrame, Option(resultFirstRoll), rollFunction)
-          (player, List(resultFirstRoll, resultSecondRoll))
+          if (nrOfFrame == nrOfFrames && resultSecondRoll.isInstanceOf[Spare]) {
+            val resultThirdRoll = player.roll(nrOfFrame, Option.empty, rollFunction)
+            (player, List(resultFirstRoll, resultSecondRoll, resultThirdRoll))
+          } else {
+            (player, List(resultFirstRoll, resultSecondRoll))
+          }
       }
     }).toMap
     new Frame(nrOfFrame, playerResults)
