@@ -62,29 +62,23 @@ object Bowling {
 
   class Frame(val nr: Int, rolls: Map[Player, List[RollResult]]) {
 
-    def getPoints(player: Player, nextFrame: Option[Frame]): Points =  {
+    def getPoints(player: Player, nextRolls: List[RollResult]): Points =  {
       val playerRolls = getPlayerRollResults(player)
       val pointsDesc = playerRolls.map(_.desc()).mkString("|")
 
       val allPointsFromFrame = playerRolls.map(_.value()).sum
 
       val allPoints: Int = playerRolls match {
-        case rolls if rolls.contains(Strike) => nextFrame.map(_.getPoints(player, None).value)
-            .getOrElse(0) + allPointsFromFrame
-        case rolls if rolls.find(result => result.isInstanceOf[Spare]).isDefined => nextFrame.map(_.getFirstRollResultValue(player))
-            .getOrElse(0) + allPointsFromFrame
+        case rolls if rolls.contains(Strike) => nextRolls.map(_.value()).sum + allPointsFromFrame
+        case rolls if rolls.exists(result => result.isInstanceOf[Spare]) =>
+          nextRolls.headOption.map(_.value()).getOrElse(0) + allPointsFromFrame
         case _ => allPointsFromFrame
       }
 
       new Points(nr, allPoints, pointsDesc)
     }
 
-    private def getFirstRollResultValue(player: Player): Int = {
-      val playerRolls = getPlayerRollResults(player)
-      playerRolls.head.value()
-    }
-
-    private def getPlayerRollResults(player: Player): List[RollResult] = {
+    def getPlayerRollResults(player: Player): List[RollResult] = {
       rolls.getOrElse(player, List())
     }
   }
@@ -145,7 +139,7 @@ object Bowling {
   private def getResult(players: List[Player], frames: List[Frame]): BowlingResult = {
     val resultsPerPlayer = players.map(player => {
           val points = frames.map(frame => {
-            frame.getPoints(player, nextFrame(frame, frames))
+            frame.getPoints(player, nextTwoRolls(player, frame, frames))
           })
           new BowlingResultPerPlayer(player, points)
     })
@@ -153,8 +147,8 @@ object Bowling {
     new BowlingResult(resultsPerPlayer)
   }
 
-  private def nextFrame(frame: Frame, allFrames: List[Frame]): Option[Frame] = {
-    allFrames.find(f => f.nr == frame.nr + 1)
+  private def nextTwoRolls(player: Player, frame: Frame, allFrames: List[Frame]): List[RollResult] = {
+    allFrames.filter(f => f.nr > frame.nr).flatMap(_.getPlayerRollResults(player)).take(2)
   }
 
 }
