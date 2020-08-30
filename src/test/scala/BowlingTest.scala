@@ -124,4 +124,18 @@ class BowlingTest extends AnyFlatSpec with Matchers {
       " || X (30) || X (30) || X (30) || X (30) || X (30) || X|X|X (30) = 300"
   }
 
+  it should "summarize points for two players" in {
+    val players = List(new Player("Test1"), new Player("Test2"))
+    val rollFunction: (Int, Int) => Int = (frameNr, previousValue) => (frameNr, previousValue) match {
+      case (1,0) => 5
+      case (1,_) => 3
+      case (2,0) => 1
+      case (2,_) => 4
+    }
+
+    val result = Bowling.play(nrOfFrames, players, rollFunction)
+
+    result.display() shouldEqual  "Test1     : 5|3 (8) || 1|4 (5) = 13\nTest2     : 5|3 (8) || 1|4 (5) = 13"
+  }
+
 }
